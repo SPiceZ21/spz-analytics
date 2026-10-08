@@ -96,28 +96,34 @@ AddEventHandler("SPZ:raceEnd", function(results)
     for _, f in ipairs(results.finishers or {}) do entry(f.source, f, false) end
     for _, d in ipairs(results.dnf or {}) do entry(d.source, d, true) end
 
-    -- spz-progression applies iRating / SR / rank after the results; give it
-    -- time, then record anyone whose numbers moved.
-    SetTimeout(15000, function()
-        local stamp = DB.Now()
-        for _, src in ipairs(srcs) do
-            local p = A.P[src]
-            local pid = A.profileId(src) or (p and p.pid)
-            local b = p and p.before
-            if pid and b and GetPlayerName(src) then
-                local a = ratings(src)
-                if a.ir ~= b.ir or a.sr ~= b.sr or a.rank ~= b.rank or a.lic ~= b.lic then
-                    DB.Insert("player_rating_history",
-                        { "player_id", "race_id", "irating", "irating_change", "sr", "sr_change",
-                          "rank_title", "rank_before", "license_tier", "license_before", "created_at" },
-                        { pid, rid, a.ir, (a.ir and b.ir) and (a.ir - b.ir) or nil,
-                          a.sr, (a.sr and b.sr) and math.floor((a.sr - b.sr) * 100 + 0.5) / 100 or nil,
-                          a.rank, b.rank, a.lic, b.lic, stamp })
-                end
-            end
-            if p then p.before, p.rnet, p.rfps, p.car = nil, nil, nil, nil end
+    for _, src in ipairs(srcs) do
+        local p = A.P[src]
+        if p then p.before, p.rnet, p.rfps, p.car = nil, nil, nil, nil end
+    end
+end)
+
+-- ── Ratings: written from spz-progression's own before/after ─────────────────
+-- This used to wait a blind 15 s after SPZ:raceEnd and diff statebags, which
+-- missed slow DB writes and mislabelled anything that changed in between.
+-- spz-progression now fires SPZ:progressionApplied once per race with the
+-- exact before/after values it applied.
+AddEventHandler("SPZ:progressionApplied", function(data)
+    if type(data) ~= "table" or type(data.players) ~= "table" then return end
+    local stamp = DB.Now()
+    local rid = data.raceId and tostring(data.raceId) or nil
+    for _, a in ipairs(data.players) do
+        if a.playerId and (a.irAfter ~= a.irBefore or a.srAfter ~= a.srBefore
+                           or a.rankAfter ~= a.rankBefore or a.tierAfter ~= a.tierBefore) then
+            DB.Insert("player_rating_history",
+                { "player_id", "race_id", "irating", "irating_change", "sr", "sr_change",
+                  "rank_title", "rank_before", "license_tier", "license_before", "created_at" },
+                { a.playerId, rid, a.irAfter, (a.irAfter or 0) - (a.irBefore or 0),
+                  a.srAfter, math.floor(((a.srAfter or 0) - (a.srBefore or 0)) * 100 + 0.5) / 100,
+                  a.rankAfter and tostring(a.rankAfter):sub(1, 16) or nil,
+                  a.rankBefore and tostring(a.rankBefore):sub(1, 16) or nil,
+                  a.tierAfter, a.tierBefore, stamp })
         end
-    end)
+    end
 end)
 
 -- ── Race engine ──────────────────────────────────────────────────────────────
