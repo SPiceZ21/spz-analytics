@@ -19,7 +19,6 @@ Config.MinStintSec   = 10    -- shorter vehicle stints are not stored
 -- Anything else that is truthy is stored as "minigame".
 Config.MinigameModes = {
     ["Hot Pursuit"] = "pursuit",
-    ["Hide & Seek"] = "hideseek",
     ["Color Rush"]  = "colorrush",
     ["replay"]      = "replay",
 }

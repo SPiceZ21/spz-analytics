@@ -298,7 +298,7 @@ local function snapshot()
         local src = tonumber(sid)
         online = online + 1
         local m = (P[src] and P[src].mode) or modeOf(src)
-        if c[m] then c[m] = c[m] + 1 else c.minigame = c.minigame + 1 end   -- pursuit/hideseek/...
+        if c[m] then c[m] = c[m] + 1 else c.minigame = c.minigame + 1 end   -- pursuit/colorrush/...
         buckets[GetPlayerRoutingBucket(src)] = true
         local ping = GetPlayerPing(src) or 0
         if ping > 0 then pingSum, pingN = pingSum + ping, pingN + 1 end
