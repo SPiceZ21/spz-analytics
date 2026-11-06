@@ -30,8 +30,8 @@ local function isTT(src)
 end
 
 local function isSpectating(src)
-    if GetResourceState("spz-spectate") ~= "started" then return false end
-    local ok, v = pcall(function() return exports["spz-spectate"]:IsSpectating(src) end)
+    if GetResourceState("spz-races") ~= "started" then return false end
+    local ok, v = pcall(function() return exports["spz-races"]:IsSpectating(src) end)
     return ok and v == true
 end
 
